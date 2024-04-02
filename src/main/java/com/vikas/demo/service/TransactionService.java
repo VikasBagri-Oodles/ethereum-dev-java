@@ -15,6 +15,7 @@ import org.web3j.crypto.TransactionEncoder;
 import org.web3j.crypto.WalletUtils;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameterName;
+import org.web3j.protocol.core.methods.response.EthGasPrice;
 import org.web3j.protocol.core.methods.response.EthGetTransactionCount;
 import org.web3j.protocol.core.methods.response.EthSendTransaction;
 import org.web3j.protocol.http.HttpService;
@@ -34,6 +35,10 @@ public class TransactionService {
     private final WalletService walletService;
 
     private final UserService userService;
+
+    public boolean checkForTxnHash(String txnHash) {
+        return transactionRepository.existsByTxnHash(txnHash);
+    }
 
     public String broadcastTxn(Long userId, CreateTransactionDTO createTransactionDTO) {
 
@@ -71,7 +76,11 @@ public class TransactionService {
 
             // one simple send txn has a gas limit of 21000
             BigInteger gasLimit = BigInteger.valueOf(21000L);
-            BigInteger gasPrice = Convert.toWei("26", Convert.Unit.GWEI).toBigInteger();
+            EthGasPrice ethGasPrice = web3j.ethGasPrice().send();
+            log.info("ehtGasPrice: {}", ethGasPrice.getGasPrice());
+//            BigInteger gasPrice = Convert.toWei("26", Convert.Unit.GWEI).toBigInteger();
+            BigInteger gasPrice = ethGasPrice.getGasPrice();
+            log.info("custom gasPrice: {}", gasPrice);
 //            BigInteger gasPrice = Convert.toWei("0.000000001", Convert.Unit.ETHER).toBigInteger();
 
             // <--------- 4.  PREPARE THE RAW TRANSACTION  ----------->
