@@ -19,4 +19,6 @@ public interface WalletRepository extends JpaRepository<Wallet, Long> {
             "WHERE w.user.id = :userId")
     Optional<Wallet> findWalletByUserId(@Param("userId") Long userId);
 
+    Boolean existsByWalletAddress(String walletAddress);
+
 }

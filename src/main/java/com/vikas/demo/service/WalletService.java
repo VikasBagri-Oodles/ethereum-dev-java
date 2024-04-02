@@ -29,6 +29,10 @@ public class WalletService {
     private static final Random random = new Random();
     private static final String walletDirectory = "/home/vikas/Documents/wallets";
 
+    public boolean checkForWalletAddress(String walletAddress) {
+        return walletRepository.existsByWalletAddress(walletAddress);
+    }
+
     public String createWalletForUserId(Long userId) {
 
         // check for user

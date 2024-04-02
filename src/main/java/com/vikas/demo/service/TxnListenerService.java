@@ -10,6 +10,7 @@ import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.protocol.http.HttpService;
 
+import java.math.BigDecimal;
 import java.util.Optional;
 
 @RequiredArgsConstructor
@@ -18,6 +19,8 @@ import java.util.Optional;
 public class TxnListenerService {
 
     private final TransactionService transactionService;
+
+    private final WalletService walletService;
 
     @PostConstruct
     public void startTxnListening() {
@@ -29,6 +32,7 @@ public class TxnListenerService {
                 try {
                     System.out.println("txn: " + txn.getHash());
                     if (transactionService.checkForTxnHash(txn.getHash())) {
+                        // SEND txn
                         log.info("txn detail: to -> {}, from -> {}, hash -> {}", txn.getTo(), txn.getFrom(), txn.getHash());
                         Optional<TransactionReceipt> transactionReceipt = web3j.ethGetTransactionReceipt(txn.getHash()).send().getTransactionReceipt();
                         if (transactionReceipt.isPresent()) {
@@ -38,8 +42,32 @@ public class TxnListenerService {
                                 Transaction transaction = transactionService.getTxnByTxnHash(txn.getHash());
                                 transaction.setTxnStatus("Completed");
                                 transactionService.saveTxn(transaction);
-                                log.info("Txn status been stored updated in db successfully");
+                                log.info("Txn status been updated in db successfully");
                              } else {
+                                log.info("Transaction failed!!!");
+                            }
+                        } else {
+                            log.info("Transaction receipt not found");
+                        }
+                    } else if (walletService.checkForWalletAddress(txn.getTo())) {
+                        // RECEIVE txn
+                        log.info("txn detail: to -> {}, from -> {}, hash -> {}", txn.getTo(), txn.getFrom(), txn.getHash());
+                        Transaction transaction = new Transaction();
+                        transaction.setFromWalletAddress(txn.getFrom());
+                        transaction.setToWalletAddress(txn.getTo());
+                        transaction.setTxnAmount(new BigDecimal(txn.getValue()));
+                        transaction.setTxnFee(new BigDecimal(txn.getGas()));
+                        transaction.setTxnHash(txn.getHash());
+                        Optional<TransactionReceipt> transactionReceipt = web3j.ethGetTransactionReceipt(txn.getHash()).send().getTransactionReceipt();
+                        if (transactionReceipt.isPresent()) {
+                            if (transactionReceipt.get().getStatus() != null && transactionReceipt.get().getStatus().equalsIgnoreCase("0x1")) {
+                                log.info("Transaction successful");
+                                // update status for txn (i.e. txn hash) in db
+//                                Transaction transaction = transactionService.getTxnByTxnHash(txn.getHash());
+                                transaction.setTxnStatus("Completed");
+                                transactionService.saveTxn(transaction);
+                                log.info("Txn status been stored in db successfully");
+                            } else {
                                 log.info("Transaction failed!!!");
                             }
                         } else {
