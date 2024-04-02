@@ -4,6 +4,7 @@ import com.vikas.demo.domain.Transaction;
 import com.vikas.demo.domain.Wallet;
 import com.vikas.demo.dto.CreateTransactionDTO;
 import com.vikas.demo.exception.CustomException;
+import com.vikas.demo.exception.ResourceNotFoundException;
 import com.vikas.demo.repository.TransactionRepository;
 import com.vikas.demo.util.EncryptDecrypt;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,7 @@ import org.web3j.protocol.core.methods.response.EthGasPrice;
 import org.web3j.protocol.core.methods.response.EthGetTransactionCount;
 import org.web3j.protocol.core.methods.response.EthSendTransaction;
 import org.web3j.protocol.http.HttpService;
+import org.web3j.tx.ChainIdLong;
 import org.web3j.utils.Convert;
 import org.web3j.utils.Numeric;
 
@@ -36,6 +38,14 @@ public class TransactionService {
 
     private final UserService userService;
 
+    public Transaction getTxnByTxnHash(String txnHash) {
+        return transactionRepository.getTxnByTxnHash(txnHash).orElseThrow(() -> new ResourceNotFoundException("Txn does not exists in the db"));
+    }
+
+    public void saveTxn(Transaction transaction) {
+        transactionRepository.save(transaction);
+    }
+
     public boolean checkForTxnHash(String txnHash) {
         return transactionRepository.existsByTxnHash(txnHash);
     }
@@ -50,7 +60,8 @@ public class TransactionService {
 
         try {
 
-            Web3j web3j = Web3j.build(new HttpService("https://eth-sepolia.public.blastapi.io"));
+            Web3j web3j = Web3j.build(new HttpService("\t\n" +
+                    "https://rpc2.sepolia.org"));
 
             // <------------  1. LOAD AN ACCOUNT AND GET NONCE  ------------->
 
@@ -94,7 +105,8 @@ public class TransactionService {
             );
 
             // <----------  5.  SIGN THE TXN  ------------>
-            byte[] signedMessage = TransactionEncoder.signMessage(rawTransaction, credentials);
+            long chainId = 11155111L;
+            byte[] signedMessage = TransactionEncoder.signMessage(rawTransaction, chainId,  credentials);
 
             // <----------  6.  SEND IT VIA JSON-RPC
 
@@ -111,7 +123,7 @@ public class TransactionService {
             transaction.setTxnStatus("Pending"); // txn is broadcast only, not finalized yet
             transaction.setTxnFee(new BigDecimal(gasPrice.multiply(new BigInteger(String.valueOf(gasLimit)))));
             transaction.setTxnHash(transactionHash);
-            transactionRepository.save(transaction);
+            transactionRepository.saveAndFlush(transaction);
 
             return "Txn has been broadcast successfully: " + transactionHash;
 
