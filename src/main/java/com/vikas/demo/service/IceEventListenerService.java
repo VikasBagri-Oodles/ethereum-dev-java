@@ -39,6 +39,8 @@ public class IceEventListenerService {
 
         try {
 
+            System.out.println("ICE ERC20 token event listener started");
+
             Flowable<Ice_token.TransferEventResponse> flowable = iceToken.transferEventFlowable(DefaultBlockParameterName.EARLIEST, DefaultBlockParameterName.LATEST);
             flowable.subscribe(event -> {
                 String from = event.from.toString();

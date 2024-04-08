@@ -41,7 +41,7 @@ public class IceTokenService {
 
             // load IceToken (i.e. ERC20 Token)
             String iceTokenAddress = "0x0ee68792599ca999BE628d2D4FE2F270a2902B08";
-            Web3j web3j = Web3j.build(new HttpService("https://ethereum-sepolia.blockpi.network/v1/rpc/public"));
+            Web3j web3j = Web3j.build(new HttpService("https://sepolia.drpc.org/"));
             String walletPassword = EncryptDecrypt.decrypt(spenderWallet.getWalletPassword());
             String walletPath = spenderWallet.getWalletJsonFilePath();
             TransactionManager transactionManager = new RawTransactionManager(
@@ -62,18 +62,6 @@ public class IceTokenService {
             TransactionReceipt transactionReceipt = iceToken.transferFrom(spenderWalletAddress, sendIceDTO.getToWalletAddress(), allowanceAmount).send();
             System.out.println("Txn hash: " + transactionReceipt.getTransactionHash());
             System.out.println("Txn status: " + transactionReceipt.getStatus());
-            if (transactionReceipt.getStatus().equalsIgnoreCase("0x1")) {
-                System.out.println("ICE send txn successful");
-                Transaction transaction = new Transaction();
-                transaction.setFromWalletAddress(spenderWalletAddress);
-                transaction.setToWalletAddress(sendIceDTO.getToWalletAddress());
-                transaction.setTxnAmount(new BigDecimal(sendIceDTO.getIceToSend()));
-                transaction.setTxnStatus("Completed");
-                transaction.setTxnFee(new BigDecimal("10000"));
-//                transaction.setTxnFee(new BigDecimal(transactionReceipt.getGasUsed().multiply(new BigInteger(transactionReceipt.getEffectiveGasPrice()))));
-                transaction.setTxnHash(transactionReceipt.getTransactionHash());
-                transactionRepository.save(transaction);
-            }
 
         } catch (Exception e) {
             e.printStackTrace();
